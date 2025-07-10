@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather & Life - Hệ thống thông minh nâng cao</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- External Libraries -->
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 font-['Inter'] min-h-screen">
+
+<header class="fixed w-full top-0 z-50 bg-white/90 backdrop-blur-md shadow-lg border-b border-blue-100">
+  <nav class="container mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+        <i class="ri-cloud-line text-white text-xl"></i>
+      </div>
+      <div class="text-2xl font-['Pacifico'] bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Weather & Life</div>
+    </div>
+    
+    <div id="clock" class="text-lg text-gray-700 font-mono bg-white/50 px-4 py-2 rounded-full"></div>
+    
+    <div class="hidden md:flex gap-6">
+      <a href="#weather" class="nav-link">Thời tiết</a>
+      <a href="#sos" class="nav-link">SOS</a>
+      <a href="#plants" class="nav-link">Cây trồng</a>
+      <a href="#alerts" class="nav-link">Cảnh báo</a>
+      <a href="#ai-assistant" class="nav-link">AI Trợ lý</a>
+      <a href="#analytics" class="nav-link">Phân tích</a>
+    </div>
+    
+    <div class="flex items-center gap-4">
+      <div class="relative">
+        <input id="locationSearch" type="text" placeholder="Tìm kiếm địa điểm..." 
+               class="pl-10 pr-4 py-2 rounded-full bg-white/70 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+        <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      </div>
+      
+      <!-- Weather Status Indicator -->
+      <div id="weatherStatus" class="hidden md:flex items-center gap-2 bg-white/70 px-3 py-2 rounded-full">
+        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        <span class="text-sm text-gray-600">Trực tuyến</span>
+      </div>
+      
+      <!-- Mobile Menu Button -->
+      <button id="mobileMenuBtn" class="md:hidden p-2 rounded-full bg-white/70 hover:bg-white transition-colors">
+        <i class="ri-menu-line text-xl"></i>
+      </button>
+    </div>
+  </nav>
+  
+  <!-- Mobile Menu -->
+  <div id="mobileMenu" class="hidden md:hidden bg-white/95 backdrop-blur-md border-t border-blue-100">
+    <div class="container mx-auto px-6 py-4 flex flex-col gap-4">
+      <a href="#weather" class="nav-link-mobile">Thời tiết</a>
+      <a href="#sos" class="nav-link-mobile">SOS</a>
+      <a href="#plants" class="nav-link-mobile">Cây trồng</a>
+      <a href="#alerts" class="nav-link-mobile">Cảnh báo</a>
+      <a href="#ai-assistant" class="nav-link-mobile">AI Trợ lý</a>
+      <a href="#analytics" class="nav-link-mobile">Phân tích</a>
+    </div>
+  </div>
+</header>
+
+<main class="pt-20">
+  <!-- Hero Section với Weather Widget -->
+  <section class="hero-section relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
+    <div class="container mx-auto px-6 py-20 relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div class="text-center lg:text-left">
+          <h1 class="text-5xl lg:text-6xl font-bold mb-6 text-white leading-tight">
+            Theo dõi thời tiết <span class="text-yellow-300">thông minh</span>
+          </h1>
+          <p class="text-xl mb-8 text-blue-100">Dự báo chính xác - Bảo vệ cuộc sống - AI hỗ trợ 24/7</p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <button class="hero-btn primary" onclick="locateUser()">
+              <i class="ri-map-pin-line mr-2"></i>
+              Xem thời tiết của bạn
+            </button>
+            <button class="hero-btn secondary" onclick="openAIAssistant()">
+              <i class="ri-robot-line mr-2"></i>
+              Hỏi AI Trợ lý
+            </button>
+          </div>
+          <p class="text-lg mt-6 text-blue-200">Phát triển bởi đội: <span class="font-semibold text-yellow-300">Silent Vision</span></p>
+        </div>
+        
+        <!-- Enhanced Current Weather Widget -->
+        <div class="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+          <div class="text-center">
+            <div id="currentWeatherIcon" class="text-6xl mb-4">🌤️</div>
+            <div id="currentTemp" class="text-4xl font-bold text-white mb-2">28°C</div>
+            <div id="currentLocation" class="text-blue-200 mb-4">Đà Nẵng, Việt Nam</div>
+            <div class="grid grid-cols-3 gap-4 text-center mb-4">
+              <div class="bg-white/10 rounded-xl p-3">
+                <i class="ri-drop-line text-blue-300 text-xl mb-1"></i>
+                <div class="text-white font-semibold">75%</div>
+                <div class="text-blue-200 text-xs">Độ ẩm</div>
+              </div>
+              <div class="bg-white/10 rounded-xl p-3">
+                <i class="ri-windy-line text-green-300 text-xl mb-1"></i>
+                <div class="text-white font-semibold">15km/h</div>
+                <div class="text-blue-200 text-xs">Gió</div>
+              </div>
+              <div class="bg-white/10 rounded-xl p-3">
+                <i class="ri-eye-line text-purple-300 text-xl mb-1"></i>
+                <div class="text-white font-semibold">10km</div>
+                <div class="text-blue-200 text-xs">Tầm nhìn</div>
+              </div>
+            </div>
+            <!-- New Air Quality Index -->
+            <div class="bg-white/10 rounded-xl p-3">
+              <div class="flex items-center justify-center gap-2 mb-2">
+                <i class="ri-leaf-line text-green-300 text-xl"></i>
+                <span class="text-white font-semibold">AQI: 45</span>
+              </div>
+              <div class="text-green-200 text-xs">Chất lượng không khí: Tốt</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Enhanced Features Section -->
+  <section id="weather" class="container mx-auto px-6 py-16">
+    <h2 class="text-4xl font-bold text-center mb-12 text-gray-800">Tính năng thông minh nâng cao</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div class="weather-card group" data-feature="weather">
+        <div class="card-icon-wrapper">
+          <i class="ri-temp-hot-line text-blue-500 text-3xl mb-4 group-hover:scale-110 transition-transform"></i>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Thời tiết địa phương</h3>
+        <p class="text-gray-600 mb-4">Xem chi tiết nhiệt độ, độ ẩm, gió tại vị trí của bạn với độ chính xác cao.</p>
+        <button class="feature-btn text-blue-500 hover:underline" data-feature="weather">Xem chi tiết</button>
+      </div>
+      
+      <div class="weather-card group" data-feature="sos">
+        <div class="card-icon-wrapper">
+          <i class="ri-alarm-warning-line text-red-500 text-3xl mb-4 group-hover:scale-110 transition-transform"></i>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">SOS Khẩn cấp</h3>
+        <p class="text-gray-600 mb-4">Gửi tín hiệu khẩn cấp đến đội cứu hộ với định vị GPS chính xác.</p>
+        <button class="feature-btn bg-red-500 hover:bg-red-600 text-white" data-feature="sos">🚨 Kích hoạt SOS</button>
+      </div>
+      
+      <div class="weather-card group" data-feature="plants">
+        <div class="card-icon-wrapper">
+          <i class="ri-plant-line text-green-500 text-3xl mb-4 group-hover:scale-110 transition-transform"></i>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Gợi ý cây trồng AI</h3>
+        <p class="text-gray-600 mb-4">AI tư vấn cây trồng phù hợp với thời tiết và đất đai địa phương.</p>
+        <button class="feature-btn text-green-500 hover:underline" data-feature="plants">Xem gợi ý</button>
+      </div>
+      
+      <div class="weather-card group" data-feature="alerts">
+        <div class="card-icon-wrapper">
+          <i class="ri-thunderstorms-line text-yellow-500 text-3xl mb-4 group-hover:scale-110 transition-transform"></i>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Cảnh báo thông minh</h3>
+        <p class="text-gray-600 mb-4">Hệ thống AI cảnh báo thiên tai sớm nhất với độ chính xác cao.</p>
+        <button class="feature-btn text-yellow-500 hover:underline" onclick="openDisasterWarningModal()">Xem cảnh báo</button>
+      </div>
+    </div>
+
+    <!-- New Advanced Features Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+      <div class="weather-card group" data-feature="health">
+        <div class="card-icon-wrapper">
+          <i class="ri-heart-pulse-line text-pink-500 text-3xl mb-4 group-hover:scale-110 transition-transform"></i>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Tư vấn sức khỏe</h3>
+        <p class="text-gray-600 mb-4">AI phân tích thời tiết và đưa ra lời khuyên sức khỏe phù hợp.</p>
+        <button class="feature-btn text-pink-500 hover:underline" data-feature="health">Xem tư vấn</button>
+      </div>
+      
+      <div class="weather-card group" data-feature="travel">
+        <div class="card-icon-wrapper">
+          <i class="ri-roadster-line text-indigo-500 text-3xl mb-4 group-hover:scale-110 transition-transform"></i>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Lên kế hoạch du lịch</h3>
+        <p class="text-gray-600 mb-4">Gợi ý thời điểm và địa điểm du lịch tốt nhất dựa trên thời tiết.</p>
+        <button class="feature-btn text-indigo-500 hover:underline" data-feature="travel">Lên kế hoạch</button>
+      </div>
+      
+      <div class="weather-card group" data-feature="energy">
+        <div class="card-icon-wrapper">
+          <i class="ri-flashlight-line text-orange-500 text-3xl mb-4 group-hover:scale-110 transition-transform"></i>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Tiết kiệm năng lượng</h3>
+        <p class="text-gray-600 mb-4">Tối ưu hóa sử dụng điện năng dựa trên dự báo thời tiết.</p>
+        <button class="feature-btn text-orange-500 hover:underline" data-feature="energy">Tối ưu hóa</button>
+      </div>
+    </div>
+    
+    <!-- Enhanced AI Assistant Card -->
+    <div id="ai-assistant" class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl p-8 text-white mb-12">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        <div>
+          <h3 class="text-3xl font-bold mb-4">🤖 AI Trợ lý thời tiết nâng cao</h3>
+          <p class="text-purple-100 mb-6">Hỏi bất cứ điều gì về thời tiết, khí hậu, và môi trường. AI của chúng tôi sẽ trả lời ngay lập tức với độ chính xác cao!</p>
+          <div class="flex gap-3 mb-4">
+            <button onclick="openAIAssistant()" class="bg-white text-purple-600 px-6 py-3 rounded-full font-semibold hover:bg-purple-50 transition-colors">
+              Bắt đầu trò chuyện
+            </button>
+            <button onclick="openVoiceAssistant()" class="bg-white/20 text-white px-6 py-3 rounded-full font-semibold hover:bg-white/30 transition-colors">
+              <i class="ri-mic-line mr-2"></i>Giọng nói
+            </button>
+          </div>
+          <div class="text-sm text-purple-200">
+            <span class="font-semibold">Mới:</span> Hỗ trợ nhận diện giọng nói và phản hồi bằng âm thanh
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-sm">
+            <div class="text-4xl mb-4">💬</div>
+            <div class="text-sm text-purple-100 mb-2">"Hôm nay có nên mang ô không?"</div>
+            <div class="text-sm text-purple-100 mb-2">"Thời tiết tuần tới thế nào?"</div>
+            <div class="text-xs text-purple-200 mt-2">Ví dụ câu hỏi</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Enhanced Charts Section -->
+  <section class="container mx-auto px-6 py-16">
+    <h2 class="text-4xl font-bold text-center mb-12 text-gray-800">Dự báo chi tiết 7 ngày</h2>
+    
+    <!-- Weather Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+      <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-6 border border-red-100">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-semibold text-red-800">Nhiệt độ</h3>
+          <i class="ri-temp-hot-line text-red-500 text-3xl"></i>
+        </div>
+        <div class="text-3xl font-bold text-red-600 mb-2">28°C</div>
+        <div class="text-sm text-red-600">Cao nhất: 31°C | Thấp nhất: 25°C</div>
+        <div id="temperatureChart" class="h-[200px] mt-4"></div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-100">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-semibold text-blue-800">Độ ẩm</h3>
+          <i class="ri-drop-line text-blue-500 text-3xl"></i>
+        </div>
+        <div class="text-3xl font-bold text-blue-600 mb-2">75%</div>
+        <div class="text-sm text-blue-600">Trung bình tuần: 73%</div>
+        <div id="humidityChart" class="h-[200px] mt-4"></div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-semibold text-green-800">Lượng mưa</h3>
+          <i class="ri-cloud-line text-green-500 text-3xl"></i>
+        </div>
+        <div class="text-3xl font-bold text-green-600 mb-2">12mm</div>
+        <div class="text-sm text-green-600">Tổng tuần: 70mm</div>
+        <div id="rainfallChart" class="h-[200px] mt-4"></div>
+      </div>
+
+      <!-- New UV Index Card -->
+      <div class="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-6 border border-purple-100">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-semibold text-purple-800">Chỉ số UV</h3>
+          <i class="ri-sun-line text-purple-500 text-3xl"></i>
+        </div>
+        <div class="text-3xl font-bold text-purple-600 mb-2">6</div>
+        <div class="text-sm text-purple-600">Mức độ: Trung bình</div>
+        <div id="uvChart" class="h-[200px] mt-4"></div>
+      </div>
+    </div>
+
+    <!-- Interactive Map Section -->
+    <div class="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-3xl font-bold text-gray-800">Bản đồ thời tiết tương tác</h2>
+        <div class="flex gap-2">
+          <button class="map-control-btn active" data-layer="temperature">Nhiệt độ</button>
+          <button class="map-control-btn" data-layer="precipitation">Mưa</button>
+          <button class="map-control-btn" data-layer="wind">Gió</button>
+          <button class="map-control-btn" data-layer="uv">UV</button>
+        </div>
+      </div>
+      <div id="map" class="rounded-2xl shadow-inner"></div>
+    </div>
+  </section>
+
+  <!-- New Analytics Section -->
+  <section id="analytics" class="container mx-auto px-6 py-16 bg-gradient-to-br from-gray-50 to-blue-50 rounded-3xl my-16">
+    <h2 class="text-4xl font-bold text-center mb-12 text-gray-800">Phân tích thông minh</h2>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Weather Trends -->
+      <div class="bg-white rounded-2xl p-6 shadow-lg">
+        <h3 class="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+          <i class="ri-line-chart-line text-blue-500"></i>
+          Xu hướng thời tiết
+        </h3>
+        <div id="trendsChart" class="h-[300px]"></div>
+        <div class="mt-4 text-sm text-gray-600">
+          <p>📈 Nhiệt độ tăng 2°C so với tuần trước</p>
+          <p>💧 Độ ẩm giảm 5% so với cùng kỳ năm ngoái</p>
+        </div>
+      </div>
+
+      <!-- AI Insights -->
+      <div class="bg-white rounded-2xl p-6 shadow-lg">
+        <h3 class="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+          <i class="ri-brain-line text-purple-500"></i>
+          Thông tin AI
+        </h3>
+        <div class="space-y-4">
+          <div class="bg-blue-50 rounded-lg p-4">
+            <h4 class="font-semibold text-blue-800 mb-2">🌡️ Dự báo nhiệt độ</h4>
+            <p class="text-blue-700 text-sm">AI dự đoán nhiệt độ sẽ tăng nhẹ trong 3 ngày tới với độ chính xác 94%</p>
+          </div>
+          <div class="bg-green-50 rounded-lg p-4">
+            <h4 class="font-semibold text-green-800 mb-2">🌧️ Khả năng mưa</h4>
+            <p class="text-green-700 text-sm">Mô hình AI cho thấy 78% khả năng có mưa vào chiều mai</p>
+          </div>
+          <div class="bg-orange-50 rounded-lg p-4">
+            <h4 class="font-semibold text-orange-800 mb-2">💨 Chất lượng không khí</h4>
+            <p class="text-orange-700 text-sm">Dự báo AQI sẽ cải thiện lên mức "Tốt" trong 2 ngày tới</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personal Weather Stats -->
+    <div class="mt-8 bg-white rounded-2xl p-6 shadow-lg">
+      <h3 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+        <i class="ri-user-line text-indigo-500"></i>
+        Thống kê cá nhân
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="text-center">
+          <div class="text-3xl font-bold text-blue-600 mb-2">127</div>
+          <div class="text-sm text-gray-600">Ngày sử dụng</div>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl font-bold text-green-600 mb-2">89%</div>
+          <div class="text-sm text-gray-600">Độ chính xác dự báo</div>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl font-bold text-purple-600 mb-2">342</div>
+          <div class="text-sm text-gray-600">Câu hỏi AI</div>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl font-bold text-orange-600 mb-2">15</div>
+          <div class="text-sm text-gray-600">Cảnh báo kịp thời</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI Assistant Modal -->
+  <div id="aiAssistantModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <i class="ri-robot-line text-xl"></i>
+              </div>
+              <div>
+                <h2 class="text-2xl font-bold">AI Trợ lý thông minh</h2>
+                <p class="text-purple-100 text-sm">Kết nối với dữ liệu thực tế</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div id="apiStatus" class="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full">
+                <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span class="text-xs">API Ready</span>
+              </div>
+            <div class="flex items-center gap-2">
+              <button id="voiceToggle" class="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors">
+                <i class="ri-mic-line text-xl"></i>
+              </button>
+              <button onclick="closeAIAssistant()" class="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors">
+                <i class="ri-close-line text-xl"></i>
+              </button>
+            </div>
+          </div>
+          <p class="text-purple-100 mt-2">Hỏi tôi bất cứ điều gì về thời tiết! Hỗ trợ giọng nói và văn bản.</p>
+          
+          <!-- API Status & Quick Info -->
+          <div class="mt-3 flex items-center justify-between">
+            <div class="text-xs text-purple-200">
+              <span id="apiInfo">💡 Cấu hình API để sử dụng dữ liệu thực tế</span>
+            </div>
+            <button onclick="toggleApiConfig()" class="text-purple-200 hover:text-white transition-colors" title="Cấu hình API">
+              <i class="ri-settings-3-line text-lg"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="flex flex-col h-[500px]">
+          <div id="chatMessages" class="flex-1 p-6 overflow-y-auto bg-gray-50">
+            <div class="ai-message">
+              <div class="flex items-start gap-3 mb-4">
+                <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <i class="ri-robot-line text-white text-sm"></i>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-sm max-w-xs">
+                  <p class="text-gray-800">Xin chào! Tôi là AI trợ lý thời tiết nâng cao. Bạn có thể hỏi tôi về:</p>
+                  <ul class="mt-2 text-sm text-gray-600">
+                    <li>• Dự báo thời tiết chi tiết</li>
+                    <li>• Lời khuyên về trang phục</li>
+                    <li>• Hoạt động phù hợp</li>
+                    <li>• Cảnh báo thời tiết</li>
+                    <li>• Tư vấn sức khỏe</li>
+                    <li>• Kế hoạch du lịch</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Input Area -->
+          <div class="p-6 bg-white border-t border-gray-200">
+            <div class="flex gap-3">
+              <input id="aiInput" type="text" placeholder="Hỏi về thời tiết hoặc nhấn mic để nói..." 
+                     class="flex-1 px-4 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+              <button id="voiceBtn" class="bg-green-500 text-white px-4 py-3 rounded-full hover:bg-green-600 transition-colors">
+                <i class="ri-mic-line"></i>
+              </button>
+              <button onclick="sendAIMessage()" class="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors">
+                <i class="ri-send-plane-line"></i>
+              </button>
+            </div>
+            <div class="flex gap-2 mt-3">
+              <button class="quick-question" onclick="askQuickQuestion('Hôm nay có mưa không?')">Hôm nay có mưa không?</button>
+              <button class="quick-question" onclick="askQuickQuestion('Nên mặc gì?')">Nên mặc gì?</button>
+              <button class="quick-question" onclick="askQuickQuestion('Cuối tuần thời tiết thế nào?')">Cuối tuần thế nào?</button>
+              <button class="quick-question" onclick="askQuickQuestion('Chất lượng không khí ra sao?')">Chất lượng không khí?</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Disaster Warning Modal -->
+  <div id="disasterModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-red-500 to-orange-500 text-white p-6 rounded-t-3xl">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <i class="ri-alarm-warning-line text-2xl"></i>
+              </div>
+              <div>
+                <h2 class="text-2xl font-bold">Hệ thống cảnh báo thiên tai AI nâng cao</h2>
+                <p class="text-red-100 text-sm">Được hỗ trợ bởi trí tuệ nhân tạo thế hệ mới</p>
+              </div>
+            </div>
+            <button onclick="closeDisasterWarningModal()" class="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors">
+              <i class="ri-close-line text-xl"></i>
+            </button>
+            </div>
+          </div>
+          <p class="text-purple-100 mt-2">AI tự động phân tích dữ liệu thời tiết, tin tức, và nhiều nguồn khác!</p>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6">
+          <!-- Current Alerts -->
+          <div class="mb-8">
+            <div class="flex items-center gap-2 mb-4">
+              <i class="ri-alert-line text-red-500 text-xl"></i>
+              <h3 class="text-xl font-bold text-gray-800">Cảnh báo hiện tại (0)</h3>
+              <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">An toàn</span>
+            </div>
+            <div id="currentAlerts" class="bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl p-8 text-center border border-blue-100">
+              <i class="ri-shield-check-line text-green-500 text-5xl mb-4"></i>
+              <h4 class="text-xl font-semibold text-gray-800 mb-2">Khu vực an toàn</h4>
+              <p class="text-gray-600 text-lg mb-2">Không có cảnh báo thiên tai nào</p>
+              <p class="text-gray-500 text-sm">Hệ thống AI đang giám sát 24/7</p>
+            </div>
+          </div>
+
+          <!-- Enhanced Risk Assessment -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
+              <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="ri-pie-chart-line text-blue-600"></i>
+                Đánh giá rủi ro AI nâng cao
+              </h3>
+              <div class="text-center mb-6">
+                <div class="relative w-32 h-32 mx-auto mb-4">
+                  <svg class="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="#e5e7eb" stroke-width="8" fill="none"/>
+                    <circle cx="50" cy="50" r="40" stroke="#3b82f6" stroke-width="8" fill="none" 
+                            stroke-dasharray="251.2" stroke-dashoffset="108" stroke-linecap="round"/>
+                  </svg>
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <span class="text-3xl font-bold text-gray-700">57</span>
+                  </div>
+                </div>
+                <p class="text-lg font-semibold text-gray-700">Mức độ: Trung bình</p>
+                <p class="text-sm text-gray-500">AI đánh giá dựa trên 25+ yếu tố</p>
+              </div>
+              
+              <div class="space-y-4">
+                <div class="risk-item">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">🌊 Lũ lụt</span>
+                    <span class="text-xs text-gray-500">70%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-red-500 h-2 rounded-full risk-progress" style="width: 70%"></div>
+                  </div>
+                </div>
+                
+                <div class="risk-item">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">🌀 Bão</span>
+                    <span class="text-xs text-gray-500">60%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-orange-500 h-2 rounded-full risk-progress" style="width: 60%"></div>
+                  </div>
+                </div>
+                
+                <div class="risk-item">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">⛈️ Dông</span>
+                    <span class="text-xs text-gray-500">80%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-red-500 h-2 rounded-full risk-progress" style="width: 80%"></div>
+                  </div>
+                </div>
+                
+                <div class="risk-item">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">🌧️ Mưa lớn</span>
+                    <span class="text-xs text-gray-500">85%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-red-500 h-2 rounded-full risk-progress" style="width: 85%"></div>
+                  </div>
+                </div>
+
+                <!-- New risk factors -->
+                <div class="risk-item">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">🌡️ Sóng nhiệt</span>
+                    <span class="text-xs text-gray-500">30%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-yellow-500 h-2 rounded-full risk-progress" style="width: 30%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Predictions -->
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
+              <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="ri-brain-line text-purple-600"></i>
+                Dự đoán AI 48h tới
+              </h3>
+              <div class="space-y-4">
+                <div class="bg-white rounded-xl p-4 border border-purple-100">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <i class="ri-cloud-rain-line text-blue-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <h4 class="font-semibold text-gray-800">Mưa nhẹ</h4>
+                      <p class="text-xs text-gray-500">15:00 - 18:00 hôm nay</p>
+                    </div>
+                  </div>
+                  <p class="text-sm text-gray-600">Khả năng: 75% | Lượng mưa: 5-10mm</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-4 border border-purple-100">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                      <i class="ri-sun-line text-yellow-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <h4 class="font-semibold text-gray-800">Nắng ráo</h4>
+                      <p class="text-xs text-gray-500">Ngày mai 6:00 - 11:00</p>
+                    </div>
+                  </div>
+                  <p class="text-sm text-gray-600">Nhiệt độ: 26-30°C | UV: Trung bình</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-4 border border-purple-100">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <i class="ri-leaf-line text-green-600 text-sm"></i>
+                    </div>
+                    <div>
+                      <h4 class="font-semibold text-gray-800">Chất lượng không khí</h4>
+                      <p class="text-xs text-gray-500">Cập nhật liên tục</p>
+                    </div>
+                  </div>
+                  <p class="text-sm text-gray-600">AQI: 45 (Tốt) | PM2.5: 12 μg/m³</p>
+                </div>
+
+                <!-- New prediction -->
+                <div class="bg-white rounded-xl p-4 border border-purple-100">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                      <i class="ri-temp-hot-line text-orange-600 text-sm"></i>
+                  <p class="text-gray-800">Xin chào! Tôi là AI trợ lý thông minh với khả năng:</p>
+                    <div>
+                    <li>• 🌤️ Phân tích thời tiết thực tế (API)</li>
+                    <li>• 📰 Tóm tắt tin tức mới nhất (API)</li>
+                    <li>• 🧠 Suy luận thông minh với AI</li>
+                    <li>• 🎯 Tư vấn dựa trên dữ liệu thật</li>
+                    <li>• ⚙️ Click cài đặt để bắt đầu!</li>
+                  <p class="text-sm text-gray-600">Dự báo: 32-35°C | Cảnh báo nắng nóng</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Enhanced Emergency Guide -->
+          <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl p-6 border border-indigo-200">
+            <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <i class="ri-first-aid-kit-line text-indigo-600"></i>
+              Hướng dẫn ứng phó khẩn cấp AI nâng cao
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="emergency-guide-card bg-white rounded-xl p-4 border border-indigo-100 hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-2 mb-3">
+                  <i class="ri-flood-line text-blue-500 text-xl"></i>
+                  <h4 class="font-semibold text-gray-700">Lũ lụt</h4>
+                </div>
+                <ul class="text-sm text-gray-600 space-y-2">
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-blue-500 text-xs mt-1"></i>
+                    <span>Di chuyển đến nơi cao hơn ngay lập tức</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-blue-500 text-xs mt-1"></i>
+                    <span>Tránh xa dòng nước chảy xiết</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-blue-500 text-xs mt-1"></i>
+                    <span>Chuẩn bị túi khẩn cấp sẵn sàng</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-blue-500 text-xs mt-1"></i>
+                    <span>Theo dõi tin tức cập nhật liên tục</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div class="emergency-guide-card bg-white rounded-xl p-4 border border-indigo-100 hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-2 mb-3">
+                  <i class="ri-typhoon-line text-orange-500 text-xl"></i>
+                  <h4 class="font-semibold text-gray-700">Bão</h4>
+                </div>
+                <ul class="text-sm text-gray-600 space-y-2">
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-orange-500 text-xs mt-1"></i>
+                    <span>Gia cố cửa sổ và mái nhà</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-orange-500 text-xs mt-1"></i>
+                    <span>Dự trữ thực phẩm và nước uống</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-orange-500 text-xs mt-1"></i>
+                    <span>Tránh ra ngoài khi bão đổ bộ</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-orange-500 text-xs mt-1"></i>
+                    <span>Kiểm tra hệ thống thoát nước</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div class="emergency-guide-card bg-white rounded-xl p-4 border border-indigo-100 hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-2 mb-3">
+                  <i class="ri-temp-hot-line text-red-500 text-xl"></i>
+                  <h4 class="font-semibold text-gray-700">Nắng nóng</h4>
+                </div>
+                <ul class="text-sm text-gray-600 space-y-2">
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-red-500 text-xs mt-1"></i>
+                    <span>Hạn chế ra ngoài 10h-16h</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-red-500 text-xs mt-1"></i>
+                    <span>Uống nhiều nước, tránh mất nước</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-red-500 text-xs mt-1"></i>
+                    <span>Mặc quần áo nhẹ, màu sáng</span>
+                  </li>
+            <!-- API Configuration Panel -->
+            <div id="apiConfigPanel" class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200 hidden">
+              <h4 class="font-semibold text-blue-800 mb-2">🔧 Cấu hình API Keys</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs text-blue-600">OpenAI API Key:</label>
+                  <input id="openaiKey" type="password" placeholder="sk-..." 
+                         class="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="text-xs text-blue-600">Weather API Key:</label>
+                  <input id="weatherKey" type="password" placeholder="Your weather API key..." 
+                         class="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+              </div>
+              <div class="mt-2 flex gap-2">
+                <button onclick="saveApiKeys()" class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                  💾 Lưu Keys
+                </button>
+                <button onclick="testApiConnection()" class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                  🧪 Test API
+                </button>
+                <button onclick="toggleApiConfig()" class="px-3 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600">
+                  ❌ Đóng
+                </button>
+              </div>
+            </div>
+
+                  <li class="flex items-start gap-2">
+                    <i class="ri-arrow-right-s-line text-red-500 text-xs mt-1"></i>
+                    <span>Sử dụng kem chống nắng SPF 30+</span>
+              <button onclick="toggleApiConfig()" class="bg-gray-500 text-white px-4 py-3 rounded-full hover:bg-gray-600 transition-colors" title="Cấu hình API">
+                <i class="ri-settings-line"></i>
+              </button>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="mt-8 flex flex-wrap gap-3 justify-center">
+            <button onclick="refreshAlerts()" class="action-btn bg-blue-500 hover:bg-blue-600">
+              <i class="ri-refresh-line mr-2"></i>
+              Làm mới cảnh báo
+            </button>
+            <button onclick="subscribeAlerts()" class="action-btn bg-green-500 hover:bg-green-600">
+              <i class="ri-notification-line mr-2"></i>
+              Đăng ký thông báo
+            </button>
+            <button onclick="shareAlerts()" class="action-btn bg-purple-500 hover:bg-purple-600">
+              <i class="ri-share-line mr-2"></i>
+              Chia sẻ
+            </button>
+            <button onclick="exportReport()" class="action-btn bg-indigo-500 hover:bg-indigo-600">
+              <i class="ri-download-line mr-2"></i>
+              Xuất báo cáo
+            </button>
+              <button class="quick-question" onclick="askQuickQuestion('Phân tích thời tiết hôm nay và đưa ra lời khuyên')">🌤️ Thời tiết thực tế</button>
+              <button class="quick-question" onclick="askQuickQuestion('Tóm tắt tin tức quan trọng hôm nay')">📰 Tin tức API</button>
+              <button class="quick-question" onclick="askQuickQuestion('Nên trồng cây gì trong thời tiết này?')">🌱 Tư vấn AI</button>
+              <button class="quick-question" onclick="askQuickQuestion('Hôm nay có nên ra ngoài không?')">🎯 Quyết định thông minh</button>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="bg-gradient-to-r from-gray-900 to-blue-900 text-white py-12">
+  <div class="container mx-auto px-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <i class="ri-cloud-line text-white text-xl"></i>
+          </div>
+          <div class="text-xl font-['Pacifico'] text-white">Weather & Life</div>
+        </div>
+        <p class="text-gray-300 text-sm">Hệ thống thời tiết thông minh được hỗ trợ bởi AI thế hệ mới, bảo vệ cuộc sống của bạn 24/7.</p>
+        <div class="mt-4 text-sm text-gray-400">
+          <p>Phiên bản: 2.0 Enhanced</p>
+          <p>Cập nhật: 2025</p>
+        </div>
+      </div>
+      
+      <div>
+        <h4 class="font-semibold mb-4">Tính năng</h4>
+        <ul class="space-y-2 text-sm text-gray-300">
+          <li><a href="#weather" class="hover:text-white transition-colors">Dự báo thời tiết</a></li>
+          <li><a href="#sos" class="hover:text-white transition-colors">SOS khẩn cấp</a></li>
+          <li><a href="#plants" class="hover:text-white transition-colors">Tư vấn cây trồng</a></li>
+          <li><a href="#alerts" class="hover:text-white transition-colors">Cảnh báo thiên tai</a></li>
+          <li><a href="#analytics" class="hover:text-white transition-colors">Phân tích thông minh</a></li>
+        </ul>
+      </div>
+      
+      <div>
+        <h4 class="font-semibold mb-4">Hỗ trợ</h4>
+        <ul class="space-y-2 text-sm text-gray-300">
+          <li><a href="#" class="hover:text-white transition-colors">Trung tâm trợ giúp</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Liên hệ</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Báo lỗi</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">API</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Tài liệu</a></li>
+        </ul>
+      </div>
+      
+      <div>
+        <h4 class="font-semibold mb-4">Kết nối</h4>
+        <div class="flex gap-3 mb-4">
+          <a href="#" class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
+            <i class="ri-facebook-line text-sm"></i>
+          </a>
+          <a href="#" class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
+            <i class="ri-twitter-line text-sm"></i>
+          </a>
+          <a href="#" class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
+            <i class="ri-instagram-line text-sm"></i>
+          </a>
+          <a href="#" class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
+            <i class="ri-github-line text-sm"></i>
+          </a>
+        </div>
+        <div class="text-sm text-gray-400">
+          <p>Email: support@weatherlife.com</p>
+          <p>Hotline: 1900-WEATHER</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+      <p class="text-gray-400">&copy; 2025 Weather & Life Enhanced. Tất cả quyền được bảo lưu.</p>
+      <p class="mt-2 text-gray-500">Phát triển bởi <span class="text-blue-400 font-semibold">Silent Vision Team</span> với ❤️</p>
+    </div>
+  </div>
+</footer>
+
+<!-- Custom JavaScript -->
+<script src="script.js"></script>
+
+</body>
+</html>
